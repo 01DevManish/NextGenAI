@@ -19,27 +19,20 @@
             align-items: center;
             height: 100vh;
             background-color: #343541;
+            color: #ffffff;
         }
 
         .container {
-            width: 100%;
-            height: 100%;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
             max-width: 800px;
+            height: 90vh;
             background-color: #1E1F22;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
             overflow: hidden;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            color: #ffffff;
-            font-weight: 500;
-            margin-bottom: 20px;
-            text-align: left;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
         }
 
         .messages-container {
@@ -47,47 +40,68 @@
             overflow-y: auto;
             padding: 20px;
             background-color: #1E1F22;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            max-height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: #6B8FCE transparent;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #6B8FCE;
+            border-radius: 4px;
         }
 
         .message {
-            margin-bottom: 20px;
+            max-width: 75%;
+            padding: 15px;
+            border-radius: 12px;
             word-wrap: break-word;
+            line-height: 1.6;
         }
 
         .user-message {
             background-color: #4A4A4A;
-            padding: 12px;
-            border-radius: 10px;
-            color: #fff;
-            max-width: 80%;
-            margin-left: auto;
+            color: #E1E1E1;
+            align-self: flex-end;
         }
 
         .bot-message {
-            background-color: #3C3F41;
-            padding: 12px;
-            border-radius: 10px;
-            color: #fff;
-            max-width: 80%;
+            background-color: #40414F;
+            color: #E1E1E1;
+            align-self: flex-start;
+        }
+
+        .bot-message h2 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .bot-message p {
+            font-size: 1rem;
+            margin-top: 10px;
         }
 
         .input-container {
             display: flex;
-            flex-direction: column;
+            padding: 10px;
+            background-color: #2C2C34;
+            gap: 10px;
         }
 
         input[type="text"] {
+            flex: 1;
             padding: 12px;
             border-radius: 8px;
             border: none;
-            background-color: #202124;
+            background-color: #3C3F41;
             color: #fff;
-            width: 100%;
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 1rem;
         }
 
         input[type="text"]:focus {
@@ -96,8 +110,8 @@
         }
 
         button {
-            padding: 12px;
-            font-size: 16px;
+            padding: 12px 15px;
+            font-size: 1rem;
             border-radius: 8px;
             border: none;
             background-color: #6B8FCE;
@@ -114,47 +128,17 @@
             background-color: #444C56;
             cursor: not-allowed;
         }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #6B8FCE;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: #6B8FCE;
-            font-weight: bold;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Next Gen AI</h1>
         <div class="messages-container" id="messagesContainer">
             <!-- Messages will appear here -->
         </div>
-
         <div class="input-container">
             <input type="text" id="inputText" placeholder="Type your message..." />
             <button id="generateBtn" onclick="generateText()">Send</button>
-        </div>
-        <div class="loading-container" id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <span>Generating...</span>
         </div>
     </div>
 
@@ -166,71 +150,77 @@
             const response = await fetch(apiUrl, {
                 headers: {
                     Authorization: `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 method: 'POST',
                 body: JSON.stringify(data),
             });
-
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Error: ${response.statusText}`);
             return await response.json();
         }
 
         async function generateText() {
             const inputText = document.getElementById('inputText').value;
-            if (!inputText) {
-                alert('Please enter a prompt.');
-                return;
-            }
+            if (!inputText.trim()) return;
 
-            // Show loading indicator and disable button
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('generateBtn').disabled = true;
-            document.getElementById('inputText').value = ''; // Clear input field
-
-            // Add user message to the UI
+            document.getElementById('inputText').value = '';
             addMessage(inputText, 'user-message');
 
-            // Prepare the data for the API request
-            const data = { inputs: inputText };
+            document.getElementById('generateBtn').disabled = true;
 
             try {
-                // Send request to Hugging Face API
-                const result = await query(data);
-                const generatedText = result?.[0]?.generated_text;
-
-                // Add bot message to the UI
-                if (generatedText) {
-                    addMessage(generatedText, 'bot-message');
-                } else {
-                    addMessage('No response generated. Please try again.', 'bot-message');
-                }
+                const result = await query({ inputs: inputText });
+                const generatedText = result?.[0]?.generated_text || 'No response. Try again.';
+                const formattedText = formatOutput(generatedText);
+                addMessage(formattedText, 'bot-message');
             } catch (error) {
-                console.error('Error generating text:', error);
-                addMessage('There was an error generating the response.', 'bot-message');
+                addMessage('Error generating response.', 'bot-message');
+                console.error(error);
             } finally {
-                // Hide loading indicator and enable button
-                document.getElementById('loading').style.display = 'none';
                 document.getElementById('generateBtn').disabled = false;
-                // Scroll to the bottom of the chat
                 scrollToBottom();
             }
         }
 
-        // Function to add messages to the UI
-        function addMessage(message, className) {
-            const messageContainer = document.createElement('div');
-            messageContainer.classList.add('message', className);
-            messageContainer.textContent = message;
-            document.getElementById('messagesContainer').appendChild(messageContainer);
+        function formatOutput(text) {
+            const sentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [];
+            const output = [];
+            let paragraph = '';
+
+            sentences.forEach((sentence) => {
+                paragraph += sentence.trim() + ' ';
+                if (paragraph.split(' ').length >= 50) {
+                    output.push(paragraph.trim());
+                    paragraph = '';
+                }
+            });
+
+            if (paragraph) output.push(paragraph.trim());
+
+            let formattedText = '';
+            output.forEach((block, index) => {
+                if (index === 0) {
+                    formattedText += `<h2>${block.split('.')[0]}.</h2>`;
+                    formattedText += `<p>${block}</p>`;
+                } else {
+                    formattedText += `<h2>Section ${index + 1}</h2>`;
+                    formattedText += `<p>${block}</p>`;
+                }
+            });
+
+            return formattedText;
         }
 
-        // Function to scroll the messages container to the bottom
+        function addMessage(content, className) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message ${className}`;
+            messageWrapper.innerHTML = content;
+            document.getElementById('messagesContainer').appendChild(messageWrapper);
+        }
+
         function scrollToBottom() {
-            const messagesContainer = document.getElementById('messagesContainer');
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
         }
     </script>
 
